@@ -1,0 +1,55 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: Release Date
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10.9"
+      - name: Install Wheel
+        run: pip install wheel
+      - name: Build 16.0
+        run: |
+          wget https://nightly.odoo.com/16.0/nightly/tgz/odoo_16.0.${{ inputs.date }}.tar.gz
+          tar -xf odoo_16.0.${{ inputs.date }}.tar.gz
+          cd odoo-16.0.post${{ inputs.date }}
+          python3 setup.py -q bdist_wheel
+      - name: Build 15.0
+        run: |
+          wget https://nightly.odoo.com/15.0/nightly/tgz/odoo_15.0.${{ inputs.date }}.tar.gz
+          tar -xf odoo_15.0.${{ inputs.date }}.tar.gz
+          cd odoo-15.0.post${{ inputs.date }}
+          python3 setup.py -q bdist_wheel
+      - name: Build 14.0
+        run: |
+          wget https://nightly.odoo.com/14.0/nightly/tgz/odoo_14.0.${{ inputs.date }}.tar.gz
+          tar -xf odoo_14.0.${{ inputs.date }}.tar.gz
+          cd odoo-14.0.post${{ inputs.date }}
+          python3 setup.py -q bdist_wheel
+      - uses: rickstaa/action-create-tag@v1
+        with:
+          tag: ${{ inputs.date }}
+          tag_exists_error: false
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.date }}
+          files: |
+            odoo-16.0.post${{ inputs.date }}/dist/odoo-16.0.post${{ inputs.date }}-py3-none-any.whl
+            odoo-15.0.post${{ inputs.date }}/dist/odoo-15.0.post${{ inputs.date }}-py3-none-any.whl
+            odoo-14.0.post${{ inputs.date }}/dist/odoo-14.0.post${{ inputs.date }}-py3-none-any.whl
